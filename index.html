@@ -2,48 +2,67 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Датчик приближения</title>
+  <title>Визуализация Акселерометра</title>
   <style>
     body {
       font-family: sans-serif;
       text-align: center;
-      padding-top: 50px;
+      background: #f0f0f0;
     }
-    #status {
-      font-size: 1.5em;
+    canvas {
+      border: 1px solid #333;
       margin-top: 20px;
+    }
+    .values {
+      font-size: 1.2em;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-  <h1>Датчик приближения (Android)</h1>
-  <div id="status">Ожидание данных от датчика...</div>
+  <h1>Визуализация Акселерометра</h1>
+  <div class="values">
+    X: <span id="x">0</span><br>
+    Y: <span id="y">0</span><br>
+    Z: <span id="z">0</span>
+  </div>
+  <canvas id="canvas" width="300" height="300"></canvas>
 
   <script>
-    async function initProximitySensor() {
-      if ('ProximitySensor' in window) {
-        try {
-          const sensor = new ProximitySensor({ frequency: 1 });
-          sensor.addEventListener('reading', () => {
-            document.getElementById('status').textContent =
-              `Расстояние: ${sensor.distance} см — ${sensor.near ? 'Объект рядом' : 'Объект далеко'}`;
-          });
-          sensor.addEventListener('error', event => {
-            document.getElementById('status').textContent =
-              `Ошибка: ${event.error.name}`;
-          });
-          sensor.start();
-        } catch (error) {
-          document.getElementById('status').textContent =
-            `Ошибка инициализации: ${error.message}`;
-        }
-      } else {
-        document.getElementById('status').textContent =
-          'Датчик приближения не поддерживается в этом браузере.';
-      }
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const xVal = document.getElementById('x');
+    const yVal = document.getElementById('y');
+    const zVal = document.getElementById('z');
+
+    function drawCircle(x, y) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.beginPath();
+      ctx.arc(x, y, 20, 0, Math.PI * 2);
+      ctx.fillStyle = 'blue';
+      ctx.fill();
+      ctx.stroke();
     }
 
-    initProximitySensor();
+    if (window.DeviceMotionEvent) {
+      window.addEventListener('devicemotion', function(event) {
+        const x = event.accelerationIncludingGravity.x || 0;
+        const y = event.accelerationIncludingGravity.y || 0;
+        const z = event.accelerationIncludingGravity.z || 0;
+
+        xVal.textContent = x.toFixed(2);
+        yVal.textContent = y.toFixed(2);
+        zVal.textContent = z.toFixed(2);
+
+        // Преобразуем значения в координаты на canvas
+        const centerX = canvas.width / 2 + x * 10;
+        const centerY = canvas.height / 2 - y * 10;
+
+        drawCircle(centerX, centerY);
+      });
+    } else {
+      alert("Ваше устройство не поддерживает акселерометр.");
+    }
   </script>
 </body>
 </html>
