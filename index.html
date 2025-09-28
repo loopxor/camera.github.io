@@ -2,28 +2,42 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Доступ к камере</title>
+  <title>Камера: фронтальная и основная</title>
   <style>
     video {
-      width: 640px;
-      height: 480px;
+      width: 100%;
+      max-width: 640px;
       border: 2px solid #333;
     }
     button {
-      margin-top: 10px;
+      margin: 10px;
     }
   </style>
 </head>
 <body>
-  <h2>Поток с веб-камеры</h2>
-  <video id="video" autoplay></video>
+  <h2>Выбор камеры на Android</h2>
+  <video id="video" autoplay playsinline></video>
   <br>
-  <button onclick="startCamera()">Включить камеру</button>
+  <button onclick="startCamera('user')">Фронтальная камера</button>
+  <button onclick="startCamera('environment')">Основная камера</button>
 
   <script>
-    async function startCamera() {
+    let currentStream;
+
+    async function startCamera(facingMode) {
+      // Остановить текущий поток, если есть
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+      }
+
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const constraints = {
+          video: { facingMode: { exact: facingMode } },
+          audio: false
+        };
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        currentStream = stream;
         const videoElement = document.getElementById('video');
         videoElement.srcObject = stream;
       } catch (error) {
