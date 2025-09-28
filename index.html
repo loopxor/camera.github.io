@@ -2,48 +2,121 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Камера: фронтальная и основная</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Рисование поверх камеры</title>
   <style>
-    video {
-      width: 100%;
-      max-width: 640px;
-      border: 2px solid #333;
+    body { margin: 0; overflow: hidden; }
+    video, canvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      z-index: 0;
+    }
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1;
     }
     button {
-      margin: 10px;
+      margin: 5px;
+      padding: 10px;
+      font-size: 16px;
     }
   </style>
 </head>
 <body>
-  <h2>Выбор камеры на Android</h2>
-  <video id="video" autoplay playsinline></video>
-  <br>
-  <button onclick="startCamera('user')">Фронтальная камера</button>
-  <button onclick="startCamera('environment')">Основная камера</button>
+  <video id="video" autoplay muted playsinline></video>
+  <div id="controls">
+    <button onclick="startCamera('user')">Фронтальная камера</button>
+    <button onclick="startCamera('environment')">Основная камера</button>
+    <button onclick="clearDrawing()">Очистить</button>
+  </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.min.js"></script>
   <script>
     let currentStream;
+    const video = document.getElementById('video');
 
     async function startCamera(facingMode) {
-      // Остановить текущий поток, если есть
       if (currentStream) {
         currentStream.getTracks().forEach(track => track.stop());
       }
-
       try {
         const constraints = {
           video: { facingMode: { exact: facingMode } },
           audio: false
         };
-
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = stream;
         currentStream = stream;
-        const videoElement = document.getElementById('video');
-        videoElement.srcObject = stream;
-      } catch (error) {
-        alert('Ошибка при доступе к камере: ' + error.message);
+      } catch (err) {
+        alert('Ошибка доступа к камере: ' + err.message);
       }
     }
+
+    // Запуск камеры по умолчанию
+    startCamera('environment');
+
+    // THREE.js сцена
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    camera.position.z = 5;
+
+    const renderer = new THREE.WebGLRenderer({ alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.domElement.style.zIndex = 1;
+    document.body.appendChild(renderer.domElement);
+
+    let drawing = false;
+    let points = [];
+    let line;
+
+    function createLine() {
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const material = new THREE.LineBasicMaterial({ color: 0xff0000 });
+      line = new THREE.Line(geometry, material);
+      scene.add(line);
+    }
+
+    function updateLine() {
+      if (line) scene.remove(line);
+      createLine();
+    }
+
+    function clearDrawing() {
+      if (line) scene.remove(line);
+      points = [];
+    }
+
+    // Сенсорные события для рисования пальцем
+    window.addEventListener('touchstart', (e) => {
+      drawing = true;
+      points = [];
+    });
+
+    window.addEventListener('touchend', () => {
+      drawing = false;
+    });
+
+    window.addEventListener('touchmove', (e) => {
+      if (!drawing) return;
+      const touch = e.touches[0];
+      const x = (touch.clientX / window.innerWidth) * 2 - 1;
+      const y = -(touch.clientY / window.innerHeight) * 2 + 1;
+      points.push(new THREE.Vector3(x * 5, y * 5, 0));
+      updateLine();
+    });
+
+    // Анимация
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+
+    animate();
   </script>
 </body>
 </html>
