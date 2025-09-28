@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Редактор блоков</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas { background: #f9f9f9; display: block; }
+    #menu {
+      position: absolute;
+      display: none;
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 5px;
+      z-index: 1000;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    #menu button {
+      display: block;
+      width: 100%;
+      margin: 2px 0;
+      padding: 5px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+<canvas id="editor" width="1200" height="700"></canvas>
+<div id="menu">
+  <button id="addInput">Добавить input</button>
+  <button id="addOutput">Добавить output</button>
+</div>
+
+<script>
+const canvas = document.getElementById('editor');
+const ctx = canvas.getContext('2d');
+const menu = document.getElementById('menu');
+const inputBtn = document.getElementById('addInput');
+const outputBtn = document.getElementById('addOutput');
+
+let blocks = [];
+let selectedBlock = null;
+
+class Block {
+  constructor(x, y, width = 140) {
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.inputs = 0;
+    this.outputs = 0;
+    this.baseHeight = 80;
+    this.padding = 15;
+    this.spacing = 20;
+  }
+
+  get height() {
+    const maxPoints = Math.max(this.inputs, this.outputs);
+    return Math.max(this.baseHeight, this.padding * 2 + maxPoints * this.spacing);
+  }
+
+  draw(ctx) {
+    ctx.fillStyle = '#2ecc71';
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+    ctx.fillStyle = '#fff';
+    ctx.font = '16px Arial';
+    ctx.fillText('Блок', this.x + 10, this.y + 25);
+
+    for (let i = 0; i < this.inputs; i++) {
+      const yOffset = this.y + this.padding + i * this.spacing;
+      ctx.beginPath();
+      ctx.arc(this.x, yOffset, 6, 0, Math.PI * 2);
+      ctx.fillStyle = 'green';
+      ctx.fill();
+    }
+
+    for (let i = 0; i < this.outputs; i++) {
+      const yOffset = this.y + this.padding + i * this.spacing;
+      ctx.beginPath();
+      ctx.arc(this.x + this.width, yOffset, 6, 0, Math.PI * 2);
+      ctx.fillStyle = 'red';
+      ctx.fill();
+    }
+  }
+
+  contains(x, y) {
+    return x >= this.x && x <= this.x + this.width &&
+           y >= this.y && y <= this.y + this.height;
+  }
+
+  addInput() {
+    this.inputs++;
+  }
+
+  addOutput() {
+    this.outputs++;
+  }
+}
+
+canvas.addEventListener('dblclick', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  blocks.push(new Block(x, y));
+  draw();
+});
+
+canvas.addEventListener('click', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  selectedBlock = blocks.find(b => b.contains(x, y));
+  if (selectedBlock) {
+    menu.style.left = `${e.clientX}px`;
+    menu.style.top = `${e.clientY}px`;
+    menu.style.display = 'block';
+  } else {
+    menu.style.display = 'none';
+  }
+});
+
+inputBtn.onclick = () => {
+  if (selectedBlock) {
+    selectedBlock.addInput();
+    draw();
+  }
+  menu.style.display = 'none';
+};
+
+outputBtn.onclick = () => {
+  if (selectedBlock) {
+    selectedBlock.addOutput();
+    draw();
+  }
+  menu.style.display = 'none';
+};
+
+document.addEventListener('click', (e) => {
+  if (!menu.contains(e.target) && e.target !== canvas) {
+    menu.style.display = 'none';
+  }
+});
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  blocks.forEach(b => b.draw(ctx));
+}
+
+draw();
+</script>
+</body>
+</html>
