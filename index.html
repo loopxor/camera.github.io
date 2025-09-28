@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Компас</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding-top: 50px;
+    }
+    #compass {
+      width: 200px;
+      height: 200px;
+      margin: 0 auto;
+      border: 5px solid #333;
+      border-radius: 50%;
+      position: relative;
+      transform: rotate(0deg);
+      transition: transform 0.2s ease-out;
+    }
+    #needle {
+      width: 4px;
+      height: 100px;
+      background: red;
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      transform-origin: bottom center;
+    }
+    #angle {
+      margin-top: 20px;
+      font-size: 1.2em;
+    }
+  </style>
+</head>
+<body>
+  <h1>Компас на JavaScript</h1>
+  <div id="compass">
+    <div id="needle"></div>
+  </div>
+  <div id="angle">Ожидание данных...</div>
+
+  <script>
+    if (window.DeviceOrientationEvent) {
+      window.addEventListener('deviceorientation', function(event) {
+        const alpha = event.alpha; // угол относительно севера
+        const compass = document.getElementById('compass');
+        const needle = document.getElementById('needle');
+        const angleText = document.getElementById('angle');
+
+        if (alpha !== null) {
+          // Поворачиваем компас (фон) в обратную сторону, чтобы стрелка указывала на север
+          compass.style.transform = `rotate(${-alpha}deg)`;
+          angleText.textContent = `Азимут: ${alpha.toFixed(1)}°`;
+        } else {
+          angleText.textContent = 'Нет данных от гироскопа.';
+        }
+      }, true);
+    } else {
+      document.getElementById('angle').textContent = 'Компас не поддерживается на этом устройстве.';
+    }
+  </script>
+</body>
+</html>
